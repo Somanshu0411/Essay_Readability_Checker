@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chapter Readability Checker</title>
+  <meta name="description" content="A free, privacy-friendly readability checker for authors.">
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #121a2d;
+      --panel2: #0f1728;
+      --text: #edf2ff;
+      --muted: #9ca9c5;
+      --border: #27334f;
+      --accent: #7c9cff;
+      --good: #48c78e;
+      --warn: #f2bd55;
+      --bad: #ef6b73;
+      --highlight: #5d2630;
+      --highlight-border: #e66d79;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: radial-gradient(circle at top, #182443 0, var(--bg) 48%);
+      color: var(--text); font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
+      min-height: 100vh;
+    }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 38px 20px 60px; }
+    header { margin-bottom: 24px; }
+    h1 { margin: 0 0 8px; font-size: clamp(30px, 5vw, 48px); letter-spacing: -1.5px; }
+    .sub { color: var(--muted); max-width: 760px; line-height: 1.55; }
+    .grid { display: grid; grid-template-columns: 1.15fr .85fr; gap: 18px; }
+    .card {
+      background: rgba(18,26,45,.92); border: 1px solid var(--border); border-radius: 18px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.25); overflow: hidden;
+    }
+    .card-head { padding: 18px 20px; border-bottom: 1px solid var(--border); display:flex; justify-content:space-between; gap:12px; align-items:center; }
+    .card-head h2 { margin:0; font-size: 17px; }
+    .editor { width:100%; min-height:430px; resize:vertical; border:0; outline:0; padding:20px;
+      background:var(--panel2); color:var(--text); font: 16px/1.7 Georgia, serif; }
+    .actions { padding: 14px 20px; display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    button {
+      border:1px solid var(--border); border-radius:10px; padding:10px 14px; background:#1a2540; color:var(--text);
+      cursor:pointer; font-weight:650;
+    }
+    button.primary { background:var(--accent); color:#091022; border-color:transparent; }
+    button:hover { filter:brightness(1.08); }
+    .hint { color:var(--muted); font-size:12px; margin-left:auto; }
+    .stats { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; padding:18px; }
+    .stat { padding:15px; border:1px solid var(--border); border-radius:13px; background:#0d1526; }
+    .stat .n { font-size:25px; font-weight:800; margin-top:3px; }
+    .stat .l { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.7px; }
+    .score { margin:0 18px 18px; padding:20px; border-radius:15px; border:1px solid var(--border); background:#0d1526; }
+    .score-row { display:flex; align-items:end; justify-content:space-between; gap:20px; }
+    .score-num { font-size:52px; font-weight:850; line-height:1; }
+    .badge { display:inline-block; margin-top:8px; padding:5px 9px; border-radius:999px; font-size:12px; font-weight:750; background:#1d2945; }
+    .bar { height:10px; background:#202b44; border-radius:999px; overflow:hidden; margin-top:18px; }
+    .fill { height:100%; width:0%; background:var(--accent); transition:width .25s; }
+    .section { padding:0 18px 18px; }
+    .section h3 { font-size:15px; margin:6px 0 12px; }
+    .hard { display:flex; gap:10px; align-items:flex-start; padding:11px; border:1px solid var(--border); border-radius:11px; margin-bottom:8px; background:#0d1526; }
+    .rank { min-width:24px; height:24px; display:grid; place-items:center; border-radius:50%; background:#202b44; color:var(--muted); font-size:12px; font-weight:800; }
+    .hard p { margin:0; font-family:Georgia,serif; line-height:1.5; font-size:14px; }
+    .hard mark { background:transparent; color:#ff8f98; text-decoration: underline; text-decoration-color:#a94b55; }
+    .empty { color:var(--muted); font-size:14px; line-height:1.5; }
+    footer { color:var(--muted); font-size:12px; text-align:center; margin-top:22px; line-height:1.6; }
+    .privacy { color:#b9c5df; }
+    @media (max-width: 800px) {
+      .grid { grid-template-columns:1fr; }
+      .editor { min-height:330px; }
+      .hint { width:100%; margin-left:0; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Chapter Readability Checker</h1>
+    <div class="sub">Paste a chapter to get a readability score, writing statistics, and the five sentences that are hardest to read. Everything runs locally in your browser.</div>
+  </header>
+
+  <div class="grid">
+    <section class="card">
+      <div class="card-head">
+        <h2>Your chapter</h2>
+        <span id="liveStatus" class="privacy">Live analysis</span>
+      </div>
+      <textarea id="text" class="editor" placeholder="Paste a chapter here..."></textarea>
+      <div class="actions">
+        <button class="primary" id="analyze">Analyze chapter</button>
+        <button id="sample">Try sample</button>
+        <button id="clear">Clear</button>
+        <span class="hint">No text is uploaded or stored.</span>
+      </div>
+    </section>
+
+    <aside class="card">
+      <div class="card-head"><h2>Overview</h2></div>
+      <div class="score">
+        <div class="score-row">
+          <div>
+            <div class="score-num" id="score">—</div>
+            <div id="level" class="badge">Waiting for text</div>
+          </div>
+          <div style="text-align:right;color:var(--muted);font-size:12px;max-width:145px;">
+            Flesch Reading Ease<br>Higher = easier
+          </div>
+        </div>
+        <div class="bar"><div id="fill" class="fill"></div></div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="l">Words</div><div class="n" id="words">0</div></div>
+        <div class="stat"><div class="l">Sentences</div><div class="n" id="sentences">0</div></div>
+        <div class="stat"><div class="l">Avg words/sentence</div><div class="n" id="avg">0</div></div>
+        <div class="stat"><div class="l">Grade level</div><div class="n" id="grade">—</div></div>
+      </div>
+      <div class="section">
+        <h3>Five hardest sentences</h3>
+        <div id="hardest" class="empty">Paste text and analyze it to see the hardest sentences.</div>
+      </div>
+    </aside>
+  </div>
+
+  <footer>
+    Flesch Reading Ease and Flesch-Kincaid Grade Level are estimates, not judgments of literary quality.
+    <br><span class="privacy">Privacy: analysis happens entirely in your browser.</span>
+  </footer>
+</div>
+
+<script>
+const textEl = document.getElementById('text');
+
+function wordsOf(s) {
+  return s.match(/\b[\w’'-]+\b/g) || [];
+}
+
+function syllables(word) {
+  let w = word.toLowerCase().replace(/[^a-z]/g, '');
+  if (!w) return 0;
+  if (w.length <= 3) return 1;
+  w = w.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, '');
+  w = w.replace(/^y/, '');
+  const groups = w.match(/[aeiouy]{1,2}/g);
+  return Math.max(1, groups ? groups.length : 1);
+}
+
+function splitSentences(text) {
+  return (text.replace(/\s+/g, ' ').match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [])
+    .map(s => s.trim()).filter(Boolean);
+}
+
+function sentenceStats(sentence) {
+  const ws = wordsOf(sentence);
+  const syll = ws.reduce((sum,w) => sum + syllables(w), 0);
+  const complex = ws.filter(w => syllables(w) >= 3).length;
+  return { words: ws.length, syllables: syll, complex };
+}
+
+function analyze(text) {
+  const ws = wordsOf(text);
+  const ss = splitSentences(text);
+  if (!ws.length) return null;
+  const totalSyllables = ws.reduce((sum,w) => sum + syllables(w), 0);
+  const sentences = Math.max(1, ss.length);
+  const words = ws.length;
+  const ease = 206.835 - 1.015 * (words / sentences) - 84.6 * (totalSyllables / words);
+  const grade = 0.39 * (words / sentences) + 11.8 * (totalSyllables / words) - 15.59;
+  const avg = words / sentences;
+
+  const scored = ss.map((s, i) => {
+    const st = sentenceStats(s);
+    const difficulty = (st.words / 20) + (st.syllables / Math.max(1, st.words)) * 10 + st.complex * 0.8;
+    return { text:s, difficulty, index:i };
+  }).sort((a,b) => b.difficulty - a.difficulty).slice(0,5);
+
+  return { words, sentences:ss.length, ease, grade, avg, hardest:scored };
+}
+
+function level(score) {
+  if (score >= 90) return ['Very easy', 'good'];
+  if (score >= 80) return ['Easy', 'good'];
+  if (score >= 70) return ['Fairly easy', 'good'];
+  if (score >= 60) return ['Standard', 'warn'];
+  if (score >= 50) return ['Fairly difficult', 'warn'];
+  if (score >= 30) return ['Difficult', 'bad'];
+  return ['Very difficult', 'bad'];
+}
+
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+}
+
+function render() {
+  const result = analyze(textEl.value);
+  const hardest = document.getElementById('hardest');
+  if (!result) {
+    document.getElementById('score').textContent = '—';
+    document.getElementById('level').textContent = 'Waiting for text';
+    document.getElementById('fill').style.width = '0%';
+    ['words','sentences','avg','grade'].forEach(id => document.getElementById(id).textContent = id==='grade' ? '—' : '0');
+    hardest.className = 'empty';
+    hardest.textContent = 'Paste text and analyze it to see the hardest sentences.';
+    return;
+  }
+  const [label, kind] = level(result.ease);
+  document.getElementById('score').textContent = Math.max(0, Math.min(100, result.ease)).toFixed(1);
+  document.getElementById('level').textContent = label;
+  document.getElementById('level').style.background = kind === 'good' ? 'rgba(72,199,142,.16)' : kind === 'warn' ? 'rgba(242,189,85,.16)' : 'rgba(239,107,115,.16)';
+  document.getElementById('fill').style.width = Math.max(0, Math.min(100, result.ease)) + '%';
+  document.getElementById('words').textContent = result.words.toLocaleString();
+  document.getElementById('sentences').textContent = result.sentences.toLocaleString();
+  document.getElementById('avg').textContent = result.avg.toFixed(1);
+  document.getElementById('grade').textContent = Math.max(0, result.grade).toFixed(1);
+
+  hardest.className = '';
+  hardest.innerHTML = result.hardest.map((x,i) =>
+    `<div class="hard"><span class="rank">${i+1}</span><p>${escapeHtml(x.text)}</p></div>`
+  ).join('');
+}
+
+document.getElementById('analyze').addEventListener('click', render);
+document.getElementById('clear').addEventListener('click', () => { textEl.value=''; render(); textEl.focus(); });
+document.getElementById('sample').addEventListener('click', () => {
+  textEl.value = `The committee's preliminary assessment was unexpectedly complicated by several contradictory observations. Although the researchers had anticipated a relatively straightforward relationship between the variables, the available evidence suggested that multiple independent factors were influencing the outcome. As a result, the team decided to postpone its conclusion until additional measurements could be collected and compared.`;
+  render();
+});
+textEl.addEventListener('input', () => {
+  clearTimeout(window.__t);
+  window.__t = setTimeout(render, 250);
+});
+render();
+</script>
+</body>
+</html>

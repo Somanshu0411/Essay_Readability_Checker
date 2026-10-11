@@ -2,11 +2,13 @@
 
 A free, browser-based tool that helps writers evaluate the readability of essays, chapters, and other text. It provides readability estimates and text statistics to help authors identify passages that may be difficult for readers.
 
-Live Demo
+## Live Demo
 
-Try the application here: Chapter Readability Checker
+Try the application here: [Chapter Readability Checker](https://somanshu0411.github.io/Essay_Readability_Checker/)
 
 ## Preview
+
+![Chapter Readability Checker screenshot](app_preview.png)
 
 ![Chapter Readability Checker screenshot](app_preview.png)
 

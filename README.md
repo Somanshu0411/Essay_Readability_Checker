@@ -4,7 +4,7 @@ A free, browser-based tool that helps writers evaluate the readability of essays
 
 ## Preview
 
-![Chapter Readability Checker screenshot](app-preview.png)
+![Chapter Readability Checker screenshot](screenshots/app-preview.png)
 
 ## Features
 

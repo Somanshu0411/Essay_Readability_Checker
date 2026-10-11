@@ -10,7 +10,6 @@ Try the application here: [Chapter Readability Checker](https://somanshu0411.git
 
 ![Chapter Readability Checker screenshot](app_preview.png)
 
-![Chapter Readability Checker screenshot](app_preview.png)
 
 ## Features
 

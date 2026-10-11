@@ -2,6 +2,10 @@
 
 A free, browser-based tool that helps writers evaluate the readability of essays, chapters, and other text. It provides readability estimates and text statistics to help authors identify passages that may be difficult for readers.
 
+## Preview
+
+![Chapter Readability Checker screenshot](app-preview.png)
+
 ## Features
 
 - **Flesch Reading Ease:** Estimates how easy a passage is to read.
